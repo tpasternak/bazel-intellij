@@ -199,6 +199,22 @@ config_setting(
 )
 
 config_setting(
+    name = "intellij-2023.2",
+    values = {
+        "define": "ij_product=intellij-2023.2",
+    },
+)
+
+config_setting(
+    name = "intellij-2023.2-mac",
+    values = {
+        "cpu": "darwin_x86_64",
+        "define": "ij_product=intellij-2023.2",
+    },
+)
+
+
+config_setting(
     name = "intellij-ue-2021.3",
     values = {
         "define": "ij_product=intellij-ue-2021.3",
@@ -262,6 +278,21 @@ config_setting(
     name = "intellij-ue-2023.1",
     values = {
         "define": "ij_product=intellij-ue-2023.1",
+    },
+)
+
+config_setting(
+    name = "intellij-ue-2023.2-mac",
+    values = {
+        "cpu": "darwin_x86_64",
+        "define": "ij_product=intellij-ue-2023.2",
+    },
+)
+
+config_setting(
+    name = "intellij-ue-2023.2",
+    values = {
+        "define": "ij_product=intellij-ue-2023.2",
     },
 )
 
@@ -509,6 +540,21 @@ config_setting(
 )
 
 config_setting(
+    name = "clion-2023.2",
+    values = {
+        "define": "ij_product=clion-2023.2",
+    },
+)
+
+config_setting(
+    name = "clion-2023.2-mac",
+    values = {
+        "cpu": "darwin_x86_64", #todo how about m1?
+        "define": "ij_product=clion-2023.2",
+    },
+)
+
+config_setting(
     name = "intellij-cc-oldest-stable",
     values = {
         "define": "ij_product=intellij-cc-oldest-stable",
@@ -654,11 +700,13 @@ java_library(
         "intellij-2022.2": ["@jsr305_annotations//jar"],
         "intellij-2022.3": ["@jsr305_annotations//jar"],
         "intellij-2023.1": ["@jsr305_annotations//jar"],
+        "intellij-2023.2": ["@jsr305_annotations//jar"],
         "intellij-ue-2021.3": ["@jsr305_annotations//jar"],
         "intellij-ue-2022.1": ["@jsr305_annotations//jar"],
         "intellij-ue-2022.2": ["@jsr305_annotations//jar"],
         "intellij-ue-2022.3": ["@jsr305_annotations//jar"],
         "intellij-ue-2023.1": ["@jsr305_annotations//jar"],
+        "intellij-ue-2023.2": ["@jsr305_annotations//jar"],
         "android-studio-2022.2": ["@jsr305_annotations//jar"],
         "android-studio-2022.3": ["@jsr305_annotations//jar"],
         "android-studio-dev": ["@jsr305_annotations//jar"],

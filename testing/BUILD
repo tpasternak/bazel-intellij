@@ -89,6 +89,14 @@ java_library(
             "testcompat/v231/com/google/idea/sdkcompat/**/*.java",
             "testcompat/v231/com/google/idea/testing/java/*.java",
         ]),
+        "intellij-2023.2": glob([
+            "testcompat/v232/com/google/idea/sdkcompat/**/*.java",
+            "testcompat/v232/com/google/idea/testing/java/*.java",
+        ]),
+        "intellij-ue-2023.2": glob([
+            "testcompat/v232/com/google/idea/sdkcompat/**/*.java",
+            "testcompat/v232/com/google/idea/testing/java/*.java",
+        ]),
         "default": [],
     }),
     deps = [
