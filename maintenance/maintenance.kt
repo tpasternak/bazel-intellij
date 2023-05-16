@@ -11,21 +11,64 @@ import java.security.MessageDigest
 import javax.xml.parsers.DocumentBuilderFactory
 
 fun main(args: Array<String>) { // run with WORKSPACE file path as the first arg
-    val intellijMajorVersion = "232"
     val out = Paths.get("${args[0]}.out")
     Files.copy(Paths.get(args[0]), out, StandardCopyOption.REPLACE_EXISTING)
+    bumpEap("232", out)
+    bumpRelease("2023.1", "231", out)
+}
+
+fun bumpRelease(version: String, major: String, out: Path) {
+    val releasesPage = URL("https://www.jetbrains.com/intellij-repository/releases").readText();
+    val clionRelease = latestRelease(version, releasesPage, "clion")
+    val icRelease = latestRelease(version, releasesPage, "ideaIC")
+    val iuRelease = latestRelease(version, releasesPage, "ideaIU")
+
+    bump(
+        workspaceShaVarName = "IC_${major}_SHA",
+        workspaceUrlVarName = "IC_${major}_URL",
+        downloadUrl = icRelease,
+        workspace = out,
+    )
+    bump(
+        workspaceShaVarName = "IU_${major}_SHA",
+        workspaceUrlVarName = "IU_${major}_URL",
+        downloadUrl = iuRelease,
+        workspace = out,
+    )
+    bump(
+        workspaceShaVarName = "CLION_${major}_SHA",
+        workspaceUrlVarName = "CLION_${major}_URL",
+        downloadUrl = clionRelease,
+        workspace = out,
+    )
+    println("$clionRelease, $icRelease, $iuRelease")
+}
+
+private fun latestRelease(version: String, releasesPage: String, product: String): String {
+    val productFamily = when(product) {
+        "ideaIC" -> "idea"
+        "ideaIU" -> "idea"
+        "clion" -> "clion"
+        else -> throw RuntimeException("No such product: $product")
+    }
+    return "https://www.jetbrains.com/intellij-repository/releases/com/jetbrains/intellij/$productFamily/$product/$version.([\\d+])/$product-$version.[\\d+].zip".toRegex()
+        .findAll(releasesPage).maxBy { it.groupValues[1].toInt() }.value
+}
+
+private fun bumpEap(intellijMajorVersion: String, out: Path) {
     val ijLatestVersion = getLatestVersion("idea", intellijMajorVersion)
     val clionLatestVersion = getLatestVersion("clion", intellijMajorVersion)
-    val goPluginLatestVersion = pluginLatestVersion("org.jetbrains.plugins.go", intellijMajorVersion)
-    val scalaPluginVersion = pluginLatestVersion("org.intellij.scala", intellijMajorVersion)
+
     println(ijLatestVersion)
     println(clionLatestVersion)
-    bump(workspaceShaVarName = "IC_${intellijMajorVersion}_SHA",
+    bump(
+        workspaceShaVarName = "IC_${intellijMajorVersion}_SHA",
         workspaceUrlVarName = "IC_${intellijMajorVersion}_URL",
         downloadUrl = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/idea/ideaIC/${ijLatestVersion}-EAP-SNAPSHOT/ideaIC-${ijLatestVersion}-EAP-SNAPSHOT.zip",
         workspace = out,
     )
-    bump(workspaceShaVarName = "IU_${intellijMajorVersion}_SHA",
+    bump(
+        workspaceShaVarName = "IU_${intellijMajorVersion}_SHA",
         workspaceUrlVarName = "IU_${intellijMajorVersion}_URL",
         downloadUrl = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/idea/ideaIU/${ijLatestVersion}-EAP-SNAPSHOT/ideaIU-${ijLatestVersion}-EAP-SNAPSHOT.zip",
         workspace = out,
@@ -36,10 +79,12 @@ fun main(args: Array<String>) { // run with WORKSPACE file path as the first arg
         downloadUrl = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/clion/clion/${clionLatestVersion}-EAP-SNAPSHOT/clion-${clionLatestVersion}-EAP-SNAPSHOT.zip",
         workspace = out,
     )
+    val goPluginLatestVersion = pluginLatestVersion("org.jetbrains.plugins.go", intellijMajorVersion)
+    val scalaPluginVersion = pluginLatestVersion("org.intellij.scala", intellijMajorVersion)
     bump(
         workspaceShaVarName = "PYTHON_PLUGIN_${intellijMajorVersion}_SHA",
-        workspaceUrlVarName  = "PYTHON_PLUGIN_${intellijMajorVersion}_URL",
-        downloadUrl ="https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/${ijLatestVersion}/PythonCore-${ijLatestVersion}.zip",
+        workspaceUrlVarName = "PYTHON_PLUGIN_${intellijMajorVersion}_URL",
+        downloadUrl = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/${ijLatestVersion}/PythonCore-${ijLatestVersion}.zip",
         workspace = out
     )
 
