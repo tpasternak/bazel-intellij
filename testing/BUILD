@@ -47,6 +47,7 @@ java_library(
         "clion-2022.2": glob(["testcompat/v222/com/google/idea/sdkcompat/**/*.java"]),
         "clion-2022.3": glob(["testcompat/v223/com/google/idea/sdkcompat/**/*.java"]),
         "clion-2023.1": glob(["testcompat/v231/com/google/idea/sdkcompat/**/*.java"]),
+        "clion-2023.2": glob(["testcompat/v232/com/google/idea/sdkcompat/**/*.java"]),
         "intellij-2021.3": glob([
             "testcompat/v213/com/google/idea/sdkcompat/**/*.java",
             "testcompat/v213/com/google/idea/testing/java/*.java",

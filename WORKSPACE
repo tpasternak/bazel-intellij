@@ -71,7 +71,6 @@ http_archive(
     url = IC_232_URL,
 )
 
-
 # The plugin api for IntelliJ UE 2021.2. This is required to run UE-specific
 # integration tests.
 http_archive(
@@ -193,7 +192,7 @@ CLION_232_SHA = "b77c879a7a6280c21b3d40874dcd211075c9dc4f5b8f8122c90d52a7a5a7cfc
 CLION_232_URL = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/clion/clion/232.5150.115-EAP-SNAPSHOT/clion-232.5150.115-EAP-SNAPSHOT.zip"
 
 http_archive(
-    name = "clion_2023_1",
+    name = "clion_2023_2",
     build_file = "@//intellij_platform_sdk:BUILD.clion232",
     sha256 = CLION_232_SHA,
     url = CLION_232_URL,
@@ -269,7 +268,6 @@ http_archive(
     sha256 = PYTHON_PLUGIN_231_SHA,
     url = PYTHON_PLUGIN_231_URL,
 )
-
 
 PYTHON_PLUGIN_232_URL = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/232.5150.116/PythonCore-232.5150.116.zip"
 
@@ -414,7 +412,6 @@ http_archive(
     sha256 = SCALA_PLUGIN_231_SHA,
     url = SCALA_PLUGIN_231_URL,
 )
-
 
 SCALA_PLUGIN_232_URL = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/org.intellij.scala/2023.2.2/org.intellij.scala-2023.2.2.zip"
 
