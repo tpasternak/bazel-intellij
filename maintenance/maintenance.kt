@@ -17,16 +17,22 @@ fun main(args: Array<String>) { // run with WORKSPACE file path as the first arg
     bumpPlugins("232", out)
     bumpRelease("2023.1", "231", out)
     bumpPlugins("231", out)
-    bumpMavenPackages(out, "org.jetbrains.kotlinx.kotlinx-coroutines-test-jvm")
+    bumpMavenPackages("junit:junit", "JUNIT", out)
 }
 
-fun bumpMavenPackages(out: Path, coordinates: String) {
+fun bumpMavenPackages(coordinates: String, variablePrefix: String, out: Path) {
     val latestVersion = latestVersion(coordinates)
-
+    val packageName = coordinates.split( ":").last()
+    val jarUrl = "https://repo1.maven.org/maven2/${coordinates.replace(":", "/").replace(".", "/")}/$latestVersion/$packageName-$latestVersion.jar"
+    val sha = shaOfUrl(jarUrl)
+    val content = Files.readString(out)
+            .insertWorkspaceValue("${variablePrefix}_ARTIFACT", "$coordinates:$latestVersion")
+            .insertWorkspaceValue("${variablePrefix}_SHA", sha)
+    Files.writeString(out, content)
 }
 
 private fun latestVersion(coordinates: String): String {
-    val metadataAddress = "https://repo1.maven.org/maven2/${coordinates.replace(".", "/")}/maven-metadata.xml"
+    val metadataAddress = "https://repo1.maven.org/maven2/${coordinates.replace(".", "/").replace(":", "/")}/maven-metadata.xml"
     val metadata = URL(metadataAddress).readText()
     val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
     val plugins = builder.parse(metadata.byteInputStream()).documentElement.getElementsByTagName("versioning")
@@ -121,8 +127,8 @@ private fun bump(downloadUrl: String, workspace: Path?, workspaceShaVarName: Str
     }
     val icSha = shaOfUrl(downloadUrl)
     val content = Files.readString(workspace)
-        .replace("$workspaceShaVarName =.*".toRegex(), """$workspaceShaVarName = "$icSha"""")
-        .replace("$workspaceUrlVarName =.*".toRegex(), """$workspaceUrlVarName = "$downloadUrl"""")
+        .insertWorkspaceValue(workspaceShaVarName, icSha)
+        .insertWorkspaceValue(workspaceUrlVarName, downloadUrl)
     Files.writeString(workspace, content)
 }
 
@@ -167,6 +173,9 @@ fun pluginLatestVersion(pluginId: String, major: String): String? {
     val pluginVersion = compatiblePlugin?.childNodes?.toList()?.firstOrNull { it.nodeName == "version" }
     return pluginVersion?.childNodes?.toList()?.first()?.nodeValue
 }
+
+fun String.insertWorkspaceValue(workspaceShaVarName: String, icSha: String): String =
+    this.replace("$workspaceShaVarName =.*".toRegex(), """$workspaceShaVarName = "$icSha"""")
 
 fun NodeList.toList(): List<Node> {
     return (0 until this.length).map { this.item(it) }
