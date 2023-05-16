@@ -14,7 +14,9 @@ fun main(args: Array<String>) { // run with WORKSPACE file path as the first arg
     val out = Paths.get("${args[0]}.out")
     Files.copy(Paths.get(args[0]), out, StandardCopyOption.REPLACE_EXISTING)
     bumpEap("232", out)
+    bumpPlugins("232", out)
     bumpRelease("2023.1", "231", out)
+    bumpPlugins("231", out)
 }
 
 fun bumpRelease(version: String, major: String, out: Path) {
@@ -44,17 +46,6 @@ fun bumpRelease(version: String, major: String, out: Path) {
     println("$clionRelease, $icRelease, $iuRelease")
 }
 
-private fun latestRelease(version: String, releasesPage: String, product: String): String {
-    val productFamily = when(product) {
-        "ideaIC" -> "idea"
-        "ideaIU" -> "idea"
-        "clion" -> "clion"
-        else -> throw RuntimeException("No such product: $product")
-    }
-    return "https://www.jetbrains.com/intellij-repository/releases/com/jetbrains/intellij/$productFamily/$product/$version.([\\d+])/$product-$version.[\\d+].zip".toRegex()
-        .findAll(releasesPage).maxBy { it.groupValues[1].toInt() }.value
-}
-
 private fun bumpEap(intellijMajorVersion: String, out: Path) {
     val ijLatestVersion = getLatestVersion("idea", intellijMajorVersion)
     val clionLatestVersion = getLatestVersion("clion", intellijMajorVersion)
@@ -79,12 +70,17 @@ private fun bumpEap(intellijMajorVersion: String, out: Path) {
         downloadUrl = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/clion/clion/${clionLatestVersion}-EAP-SNAPSHOT/clion-${clionLatestVersion}-EAP-SNAPSHOT.zip",
         workspace = out,
     )
+    println(out.toAbsolutePath())
+}
+
+private fun bumpPlugins(intellijMajorVersion: String, out: Path) {
     val goPluginLatestVersion = pluginLatestVersion("org.jetbrains.plugins.go", intellijMajorVersion)
     val scalaPluginVersion = pluginLatestVersion("org.intellij.scala", intellijMajorVersion)
+    val pythonPluginVersion = pluginLatestVersion("PythonCore", intellijMajorVersion)
     bump(
         workspaceShaVarName = "PYTHON_PLUGIN_${intellijMajorVersion}_SHA",
         workspaceUrlVarName = "PYTHON_PLUGIN_${intellijMajorVersion}_URL",
-        downloadUrl = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/${ijLatestVersion}/PythonCore-${ijLatestVersion}.zip",
+        downloadUrl = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/${pythonPluginVersion}/PythonCore-${pythonPluginVersion}.zip",
         workspace = out
     )
 
@@ -100,7 +96,6 @@ private fun bumpEap(intellijMajorVersion: String, out: Path) {
         downloadUrl = "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/org.intellij.scala/${scalaPluginVersion}/org.intellij.scala-${scalaPluginVersion}.zip",
         workspace = out
     )
-    println(out.toAbsolutePath())
 }
 
 private fun bump(downloadUrl: String, workspace: Path?, workspaceShaVarName: String, workspaceUrlVarName: String) {
@@ -135,6 +130,16 @@ private fun getLatestVersion(product: String, major: String): String {
     return BufferedInputStream(ijVersionUrl.openStream()).reader().readText()
 }
 
+private fun latestRelease(version: String, releasesPage: String, product: String): String {
+    val productFamily = when(product) {
+        "ideaIC" -> "idea"
+        "ideaIU" -> "idea"
+        "clion" -> "clion"
+        else -> throw RuntimeException("No such product: $product")
+    }
+    return "https://www.jetbrains.com/intellij-repository/releases/com/jetbrains/intellij/$productFamily/$product/$version.([\\d+])/$product-$version.[\\d+].zip".toRegex()
+        .findAll(releasesPage).maxBy { it.groupValues[1].toInt() }.value
+}
 
 fun pluginLatestVersion(pluginId: String, major: String): String? {
     val pluginListUrl = URL("https://plugins.jetbrains.com/plugins/list?pluginId=$pluginId").readText()
