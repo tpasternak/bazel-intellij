@@ -457,6 +457,10 @@ http_archive(
 )
 
 # LICENSE: Common Public License 1.0
+JUNIT_ARTIFACT = ""
+
+JUNIT_SHA = ""
+
 jvm_maven_import_external(
     name = "junit",
     artifact = "junit:junit:4.12",

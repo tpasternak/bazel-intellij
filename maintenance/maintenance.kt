@@ -17,6 +17,20 @@ fun main(args: Array<String>) { // run with WORKSPACE file path as the first arg
     bumpPlugins("232", out)
     bumpRelease("2023.1", "231", out)
     bumpPlugins("231", out)
+    bumpMavenPackages(out, "org.jetbrains.kotlinx.kotlinx-coroutines-test-jvm")
+}
+
+fun bumpMavenPackages(out: Path, coordinates: String) {
+    val latestVersion = latestVersion(coordinates)
+
+}
+
+private fun latestVersion(coordinates: String): String {
+    val metadataAddress = "https://repo1.maven.org/maven2/${coordinates.replace(".", "/")}/maven-metadata.xml"
+    val metadata = URL(metadataAddress).readText()
+    val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+    val plugins = builder.parse(metadata.byteInputStream()).documentElement.getElementsByTagName("versioning")
+    return plugins.item(0).childNodes.toList().first { it.nodeName == "latest" }.firstChild.nodeValue
 }
 
 fun bumpRelease(version: String, major: String, out: Path) {
