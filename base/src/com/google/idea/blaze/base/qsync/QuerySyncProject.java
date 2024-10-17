@@ -254,7 +254,12 @@ public class QuerySyncProject {
       context.push(new SyncQueryStatsScope());
       try {
         var vcsState = projectQuerier.getVcsState(context);
-        var affected = projectRefresher.getAffected(context, lastQuery.get(), vcsState, bazelVersionProvider.getBazelVersion(), projectDefinition);
+        ImmutableSet<Path> affected;
+        if(lastQuery.isPresent()) {
+          affected = projectRefresher.getAffected(context, lastQuery.get(), vcsState, bazelVersionProvider.getBazelVersion(), projectDefinition);
+        } else{
+          affected = ImmutableSet.of();
+        }
 
         for (SyncListener syncListener : SyncListener.EP_NAME.getExtensionList()) {
           syncListener.onQuerySyncStart(project, context, affected);
