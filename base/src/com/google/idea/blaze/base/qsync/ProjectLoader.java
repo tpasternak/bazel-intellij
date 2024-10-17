@@ -208,12 +208,13 @@ public class ProjectLoader {
             () -> !QuerySync.EXTRACT_RES_PACKAGES_AT_BUILD_TIME.getValue(),
             QuerySync.USE_NEW_BUILD_ARTIFACT_MANAGEMENT);
     QueryRunner queryRunner = createQueryRunner(buildSystem);
+    var bazelVersionProvider = new BazelVersionHandler(buildSystem, buildSystem.getBuildInvoker(project, context));
     ProjectQuerier projectQuerier =
         createProjectQuerier(
             projectRefresher,
             queryRunner,
             vcsHandler,
-            new BazelVersionHandler(buildSystem, buildSystem.getBuildInvoker(project, context)));
+            bazelVersionProvider);
     QuerySyncSourceToTargetMap sourceToTargetMap =
         new QuerySyncSourceToTargetMap(graph, workspaceRoot.path());
 
@@ -242,7 +243,9 @@ public class ProjectLoader {
             sourceToTargetMap,
             projectViewManager,
             buildSystem,
-            projectTransformRegistry);
+            projectTransformRegistry,
+            projectRefresher,
+                bazelVersionProvider);
     BlazeProjectListenerProvider.registerListenersFor(querySyncProject);
     projectTransformRegistry.addAll(ProjectProtoTransformProvider.getAll(querySyncProject));
 

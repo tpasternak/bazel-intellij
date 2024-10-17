@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.qsync;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.common.Context;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.common.vcs.VcsState;
@@ -67,6 +68,20 @@ public class ProjectRefresher {
         context);
   }
 
+  public ImmutableSet<Path> getAffected(
+          Context<?> context,
+          PostQuerySyncData currentProject,
+          Optional<VcsState> latestVcsState,
+          Optional<String> latestBazelVersion,
+          ProjectDefinition latestProjectDefinition)
+          throws BuildException {
+        return
+            new RefreshParameters(
+                    currentProject, latestVcsState, latestBazelVersion, latestProjectDefinition, vcsDiffer).
+                    calculateAffectedPackages(context, true)
+                    .getModifiedPackages();
+  }
+
   public RefreshOperation startPartialRefresh(RefreshParameters params, Context<?> context)
       throws BuildException {
     if (params.requiresFullUpdate(context)) {
@@ -76,7 +91,7 @@ public class ProjectRefresher {
           params.latestVcsState,
           params.latestBazelVersion);
     }
-    AffectedPackages affected = params.calculateAffectedPackages(context);
+    AffectedPackages affected = params.calculateAffectedPackages(context, true);
 
     if (affected.isEmpty()) {
       // No consequential changes since last sync

@@ -27,6 +27,8 @@ import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.Project;
 
+import java.nio.file.Path;
+
 /** Extension interface for listening to syncs. */
 public interface SyncListener {
   ExtensionPointName<SyncListener> EP_NAME =
@@ -73,5 +75,5 @@ public interface SyncListener {
   default void afterQuerySync(Project project, BlazeContext context) {}
 
   /** Called before sync. Only used in new query-sync * */
-  default void onQuerySyncStart(Project project, BlazeContext context) {}
+  default void onQuerySyncStart(Project project, BlazeContext context, ImmutableSet<Path> affected) throws SyncFailedException {}
 }

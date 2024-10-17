@@ -44,7 +44,7 @@ public class QuerySync {
       new BoolExperiment("querysync.attach.dep.srcjars", true);
 
   public static final boolean USE_NEW_BUILD_ARTIFACT_MANAGEMENT =
-      new BoolExperiment("query.sync.new.artifact.management", false).getValue();
+      new BoolExperiment("query.sync.new.artifact.management", true).getValue();
 
   /**
    * Previously, query sync was enabled by an experiment. Some users still have that experiment set

@@ -37,6 +37,7 @@ import com.google.idea.blaze.base.settings.BlazeImportSettings;
 import com.google.idea.blaze.base.sync.SyncListener;
 import com.google.idea.blaze.base.sync.SyncMode;
 import com.google.idea.blaze.base.sync.SyncResult;
+import com.google.idea.blaze.base.sync.SyncScope;
 import com.google.idea.blaze.base.sync.projectview.ImportRoots;
 import com.google.idea.blaze.base.sync.projectview.LanguageSupport;
 import com.google.idea.blaze.base.sync.projectview.WorkspaceLanguageSettings;
@@ -48,9 +49,7 @@ import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.common.artifact.BuildArtifactCache;
 import com.google.idea.blaze.common.vcs.VcsState;
 import com.google.idea.blaze.exception.BuildException;
-import com.google.idea.blaze.qsync.BlazeProject;
-import com.google.idea.blaze.qsync.BlazeProjectSnapshot;
-import com.google.idea.blaze.qsync.BlazeProjectSnapshotBuilder;
+import com.google.idea.blaze.qsync.*;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.project.PostQuerySyncData;
 import com.google.idea.blaze.qsync.project.ProjectDefinition;
@@ -110,34 +109,36 @@ public class QuerySyncProject {
   private final ProjectViewManager projectViewManager;
   private final BuildSystem buildSystem;
   private final ProjectProtoTransform.Registry projectProtoTransforms;
+    private final ProjectRefresher projectRefresher;
+    private final BazelVersionHandler bazelVersionProvider;
 
-  private volatile QuerySyncProjectData projectData;
+    private volatile QuerySyncProjectData projectData;
 
   public QuerySyncProject(
-      Project project,
-      Path snapshotFilePath,
-      BlazeProject snapshotHolder,
-      BlazeImportSettings importSettings,
-      WorkspaceRoot workspaceRoot,
-      ArtifactTracker<?> artifactTracker,
-      BuildArtifactCache buildArtifactCache,
-      ProjectArtifactStore artifactStore,
-      RenderJarArtifactTracker renderJarArtifactTracker,
-      AppInspectorArtifactTracker appInspectorArtifactTracker,
-      DependencyTracker dependencyTracker,
-      RenderJarTracker renderJarTracker,
-      AppInspectorTracker appInspectorTracker,
-      ProjectQuerier projectQuerier,
-      BlazeProjectSnapshotBuilder blazeProjectSnapshotBuilder,
-      ProjectDefinition projectDefinition,
-      ProjectViewSet projectViewSet,
-      WorkspacePathResolver workspacePathResolver,
-      ProjectPath.Resolver projectPathResolver,
-      WorkspaceLanguageSettings workspaceLanguageSettings,
-      QuerySyncSourceToTargetMap sourceToTargetMap,
-      ProjectViewManager projectViewManager,
-      BuildSystem buildSystem,
-      ProjectProtoTransform.Registry projectProtoTransforms) {
+          Project project,
+          Path snapshotFilePath,
+          BlazeProject snapshotHolder,
+          BlazeImportSettings importSettings,
+          WorkspaceRoot workspaceRoot,
+          ArtifactTracker<?> artifactTracker,
+          BuildArtifactCache buildArtifactCache,
+          ProjectArtifactStore artifactStore,
+          RenderJarArtifactTracker renderJarArtifactTracker,
+          AppInspectorArtifactTracker appInspectorArtifactTracker,
+          DependencyTracker dependencyTracker,
+          RenderJarTracker renderJarTracker,
+          AppInspectorTracker appInspectorTracker,
+          ProjectQuerier projectQuerier,
+          BlazeProjectSnapshotBuilder blazeProjectSnapshotBuilder,
+          ProjectDefinition projectDefinition,
+          ProjectViewSet projectViewSet,
+          WorkspacePathResolver workspacePathResolver,
+          ProjectPath.Resolver projectPathResolver,
+          WorkspaceLanguageSettings workspaceLanguageSettings,
+          QuerySyncSourceToTargetMap sourceToTargetMap,
+          ProjectViewManager projectViewManager,
+          BuildSystem buildSystem,
+          ProjectProtoTransform.Registry projectProtoTransforms, ProjectRefresher projectRefresher, BazelVersionHandler bazelVersionProvider) {
     this.project = project;
     this.snapshotFilePath = snapshotFilePath;
     this.snapshotHolder = snapshotHolder;
@@ -162,7 +163,9 @@ public class QuerySyncProject {
     this.projectViewManager = projectViewManager;
     this.buildSystem = buildSystem;
     this.projectProtoTransforms = projectProtoTransforms;
-    projectData = new QuerySyncProjectData(workspacePathResolver, workspaceLanguageSettings);
+      this.projectRefresher = projectRefresher;
+      this.bazelVersionProvider = bazelVersionProvider;
+      projectData = new QuerySyncProjectData(workspacePathResolver, workspaceLanguageSettings);
   }
 
   public Project getIdeProject() {
@@ -250,15 +253,27 @@ public class QuerySyncProject {
     try (BlazeContext context = BlazeContext.create(parentContext)) {
       context.push(new SyncQueryStatsScope());
       try {
+        var vcsState = projectQuerier.getVcsState(context);
+        var affected = projectRefresher.getAffected(context, lastQuery.get(), vcsState, bazelVersionProvider.getBazelVersion(), projectDefinition);
+
         for (SyncListener syncListener : SyncListener.EP_NAME.getExtensionList()) {
-          syncListener.onQuerySyncStart(project, context);
+          syncListener.onQuerySyncStart(project, context, affected);
         }
 
+
         SaveUtil.saveAllFiles();
-        PostQuerySyncData postQuerySyncData =
-            lastQuery.isEmpty()
-                ? projectQuerier.fullQuery(projectDefinition, context)
-                : projectQuerier.update(projectDefinition, lastQuery.get(), context);
+        PostQuerySyncData postQuerySyncData;
+        if (lastQuery.isEmpty()) {
+          postQuerySyncData = projectQuerier.fullQuery(projectDefinition, context);
+        } else {
+          postQuerySyncData = projectQuerier.update(context, projectRefresher.startPartialRefresh(
+                  context,
+                  lastQuery.get(),
+                  vcsState,
+                  bazelVersionProvider.getBazelVersion(),
+                  projectDefinition));
+        }
+
         BlazeProjectSnapshot newSnapshot =
             blazeProjectSnapshotBuilder.createBlazeProjectSnapshot(
                 context,
@@ -280,7 +295,7 @@ public class QuerySyncProject {
               SyncMode.FULL,
               SyncResult.SUCCESS);
         }
-      } catch (IOException e) {
+      } catch (IOException | SyncScope.SyncFailedException e) {
         throw new BuildException(e);
       } finally {
         for (SyncListener syncListener : SyncListener.EP_NAME.getExtensions()) {

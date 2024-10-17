@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.lang.buildfile.language.BuildFileType;
 import com.google.idea.blaze.base.logging.utils.querysync.QuerySyncActionStatsScope;
 import com.google.idea.blaze.base.qsync.QuerySyncManager.TaskOrigin;
@@ -215,7 +216,7 @@ public class QuerySyncAsyncFileListener implements AsyncFileListener {
   public static class QuerySyncListener implements SyncListener {
 
     @Override
-    public void onQuerySyncStart(Project project, BlazeContext context) {
+    public void onQuerySyncStart(Project project, BlazeContext context, ImmutableSet<Path> affected) {
       QuerySyncAsyncFileListener fileListener =
           QuerySyncManager.getInstance(project).getFileListener();
       fileListener.clearState();

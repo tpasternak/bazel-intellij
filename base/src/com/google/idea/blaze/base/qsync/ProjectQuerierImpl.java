@@ -117,7 +117,7 @@ public class ProjectQuerierImpl implements ProjectQuerier {
    */
   @Override
   public PostQuerySyncData update(
-      ProjectDefinition currentProjectDef, PostQuerySyncData previousState, BlazeContext context)
+          BlazeContext context, RefreshOperation refresh)
       throws IOException, BuildException {
 
     Optional<VcsState> vcsState = getVcsState(context);
@@ -128,14 +128,6 @@ public class ProjectQuerierImpl implements ProjectQuerier {
             "Starting partial query update; upstream rev=%s; snapshot path=%s",
             vcsState.map(s -> s.upstreamRevision).orElse("<unknown>"),
             vcsState.flatMap(s -> s.workspaceSnapshotPath).map(Object::toString).orElse("<none>")));
-
-    RefreshOperation refresh =
-        projectRefresher.startPartialRefresh(
-            context,
-            previousState,
-            vcsState,
-            bazelVersionProvider.getBazelVersion(),
-            currentProjectDef);
 
     Optional<QuerySpec> spec = refresh.getQuerySpec();
     QuerySummary querySummary;

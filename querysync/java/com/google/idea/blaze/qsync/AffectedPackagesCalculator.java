@@ -57,6 +57,10 @@ public abstract class AffectedPackagesCalculator {
   }
 
   public AffectedPackages getAffectedPackages() {
+    return getAffectedPackages(false);
+  }
+
+  public AffectedPackages getAffectedPackages(Boolean gazelle) {
     List<WorkspaceFileChange> projectChanges = Lists.newArrayList();
     List<WorkspaceFileChange> nonProjectChanges = Lists.newArrayList();
     AffectedPackages.Builder result = AffectedPackages.builder();
@@ -86,7 +90,7 @@ public abstract class AffectedPackagesCalculator {
     // Find BUILD files that have been directly affected by edits.
     ImmutableList<WorkspaceFileChange> buildFileChanges =
         projectChanges.stream()
-            .filter(c -> c.workspaceRelativePath.getFileName().toString().equals("BUILD"))
+            .filter(c -> gazelle || c.workspaceRelativePath.getFileName().toString().equals("BUILD"))
             .collect(toImmutableList());
     PackageSet.Builder addedPackages = new PackageSet.Builder();
     PackageSet.Builder deletedPackages = new PackageSet.Builder();

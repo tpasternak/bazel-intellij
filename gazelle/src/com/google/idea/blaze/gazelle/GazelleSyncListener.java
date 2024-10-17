@@ -16,6 +16,7 @@
 package com.google.idea.blaze.gazelle;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.idea.blaze.base.async.FutureUtil;
 import com.google.idea.blaze.base.async.executor.ProgressiveTaskWithProgressIndicator;
@@ -46,8 +47,11 @@ import com.google.idea.blaze.base.sync.SyncMode;
 import com.google.idea.blaze.base.sync.SyncScope;
 import com.google.idea.blaze.base.sync.projectview.ImportRoots;
 import com.google.idea.blaze.base.toolwindow.Task;
+
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
+
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -140,10 +144,10 @@ public class GazelleSyncListener implements SyncListener {
   }
 
   private ListenableFuture<Void> createGazelleFuture(
-      Project project,
-      BlazeContext parentContext,
-      ProjectViewSet projectViewSet,
-      Label gazelleLabel) {
+          Project project,
+          BlazeContext parentContext,
+          ProjectViewSet projectViewSet,
+          Label gazelleLabel, ImmutableSet<Path> affected) {
     return ProgressiveTaskWithProgressIndicator.builder(project, "Running Gazelle")
         .submitTask(
             indicator ->
@@ -154,12 +158,18 @@ public class GazelleSyncListener implements SyncListener {
 
                       ImmutableList<BlazeIssueParser.Parser> issueParsers =
                           gazelleIssueParsers(project, workspaceRoot);
-                      if (! this.runGazelleHeadless()) {
-                        setUpUI(context, parentContext, project, indicator, issueParsers);
-                      }
+                        if (!this.runGazelleHeadless()) {
+                            setUpUI(context, parentContext, project, indicator, issueParsers);
+                        }
 
-                      Collection<WorkspacePath> importantDirectories =
-                          importantDirectories(project);
+                        Collection<WorkspacePath> importantDirectories = null;
+                        if (Blaze.getProjectData(project).isQuerySync()) {
+                            importantDirectories = affected.stream()
+                                    .map(it -> WorkspacePath.createIfValid(it.toString()))
+                                    .collect(Collectors.toUnmodifiableList());
+                        } else {
+                            importantDirectories = importantDirectories(project);
+                        }
                       List<String> blazeFlags = blazeFlags(project, context, projectViewSet);
                       GazelleRunResult result =
                           doRunGazelle(
@@ -210,7 +220,7 @@ public class GazelleSyncListener implements SyncListener {
     gazelleBinary.ifPresent(
         label -> {
           ListenableFuture<Void> gazelleFuture =
-              createGazelleFuture(project, parentContext, projectViewSet, label);
+              createGazelleFuture(project, parentContext, projectViewSet, label, ImmutableSet.of());
           FutureUtil.waitForFuture(parentContext, gazelleFuture)
               .withProgressMessage("Running Gazelle...")
               .timed("GazelleRun", TimingScope.EventType.BlazeInvocation)
@@ -240,4 +250,33 @@ public class GazelleSyncListener implements SyncListener {
             .collect(Collectors.toSet());
     return paths;
   }
+
+    @Override
+    public void onQuerySyncStart(Project project, BlazeContext parentContext, ImmutableSet<Path> affected) throws SyncScope.SyncFailedException {
+
+        ProjectViewSet projectViewSet = ProjectViewManager.getInstance(project).getProjectViewSet();
+        Optional<Label> gazelleBinary;
+        try {
+            gazelleBinary = this.getGazelleBinary(projectViewSet);
+        } catch (InvalidTargetException e) {
+            String msg = "Label for Gazelle target is invalid. Please re-check the plugin's settings.";
+            parentContext.output(SummaryOutput.error(SummaryOutput.Prefix.TIMESTAMP, msg));
+            // If there is an invalid target, the user wanted to have a gazelle.
+            // Therefore, failing the sync is proper, as it will otherwise likely fail for out-of-date
+            // changes.
+            throw new SyncScope.SyncFailedException(msg, e);
+        }
+
+        gazelleBinary.ifPresent(
+                label -> {
+                    ListenableFuture<Void> gazelleFuture =
+                            createGazelleFuture(project, parentContext, projectViewSet, label, affected);
+                    FutureUtil.waitForFuture(parentContext, gazelleFuture)
+                            .withProgressMessage("Running Gazelle...")
+                            .timed("GazelleRun", TimingScope.EventType.BlazeInvocation)
+                            .onError("Gazelle failed")
+                            .run();
+                });
+    }
+
 }

@@ -100,7 +100,7 @@ public class RefreshParameters {
     return false;
   }
 
-  AffectedPackages calculateAffectedPackages(Context<?> context) throws BuildException {
+  AffectedPackages calculateAffectedPackages(Context<?> context, Boolean gazelle) throws BuildException {
     // Build the effective working set. This includes the working set as was when the original
     // sync query was run, as it's possible that files have been reverted since then but the
     // earlier query output will reflect the un-reverted file state.
@@ -139,6 +139,6 @@ public class RefreshParameters {
         .changedFiles(changed)
         .lastQuery(currentProject.querySummary())
         .build()
-        .getAffectedPackages();
+        .getAffectedPackages(gazelle);
   }
 }
