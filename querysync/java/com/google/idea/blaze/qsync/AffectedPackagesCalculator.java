@@ -98,6 +98,9 @@ public abstract class AffectedPackagesCalculator {
     if (!buildFileChanges.isEmpty()) {
       context().output(PrintOutput.log("Edited %d BUILD files", buildFileChanges.size()));
       for (WorkspaceFileChange c : buildFileChanges) {
+        if(c.workspaceRelativePath.getFileName().getParent() == null) {
+          continue;
+        }
         Path buildPackage = c.workspaceRelativePath.getParent();
         if (c.operation != Operation.ADD) {
           // modifying/deleting an existing package
