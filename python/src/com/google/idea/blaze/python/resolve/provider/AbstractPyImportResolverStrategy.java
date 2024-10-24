@@ -173,7 +173,7 @@ public abstract class AbstractPyImportResolverStrategy implements PyImportResolv
     ImmutableSetMultimap.Builder<String, QualifiedName> shortNames = ImmutableSetMultimap.builder();
     Map<QualifiedName, PsiElementProvider> map = new HashMap<>();
 
-    var currentSnapshot =QuerySyncManager.getInstance(project)
+    var currentSnapshot = QuerySyncManager.getInstance(project)
             .getLoadedProject()
             .flatMap(it -> it.getSnapshotHolder().getCurrent())
             .orElse(null);
