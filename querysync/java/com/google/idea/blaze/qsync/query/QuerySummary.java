@@ -190,7 +190,7 @@ public abstract class QuerySummary {
 
             if (a.getName().equals("test_app")) {
               rule.setTestApp(a.getStringValue());
-            } if (a.getName().equals("instruments")) {
+            } else if (a.getName().equals("instruments")) {
               rule.setInstruments(a.getStringValue());
             } else if (a.getName().equals("imports")) {
               rule.addAllImports(a.getStringListValueList());
