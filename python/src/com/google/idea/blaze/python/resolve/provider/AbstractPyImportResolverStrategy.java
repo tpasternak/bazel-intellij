@@ -177,7 +177,7 @@ public abstract class AbstractPyImportResolverStrategy implements PyImportResolv
             .getLoadedProject()
             .flatMap(it -> it.getSnapshotHolder().getCurrent())
             .orElse(null);
-    if(currentSnapshot == null) {
+    if (currentSnapshot == null) {
       return null;
     }
     var workspaceRoot = WorkspaceRoot.fromProjectSafe(project);
