@@ -185,7 +185,7 @@ public abstract class AbstractPyImportResolverStrategy implements PyImportResolv
       return null;
     }
 
-    for(var target: currentSnapshot.getTargetMap().entrySet()){
+    for (var target : currentSnapshot.getTargetMap().entrySet()) {
       List<QualifiedName> importRoots = assembleImportRootsQuerySync(target.getKey(), project);
       for (var source : target.getValue().sourceLabels().get(ProjectTarget.SourceType.REGULAR)) {
         List<QualifiedName> sourceImports = assembleSourceImportsFromImportRoots(importRoots,
