@@ -53,7 +53,7 @@ public class BlazePyResolverUtils {
   private static Optional<File> resolveGenfilesPath(Project project, String relativePath) {
     BlazeProjectData projectData =
         BlazeProjectDataManager.getInstance(project).getBlazeProjectData();
-    if(Blaze.getProjectType(project) == BlazeImportSettings.ProjectType.QUERY_SYNC) {
+    if (Blaze.getProjectType(project) == BlazeImportSettings.ProjectType.QUERY_SYNC) {
       return Optional.empty();
     }
     if (projectData == null) {
